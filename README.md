@@ -23,7 +23,7 @@ remotes::install_github("YuriIriarte/contracted-beta")
 
 ---
 
-## 🔷 4. Basic usage (clave para reviewers)
+## 🔷 4. Basic usage
 
 ```markdown
 ## Basic Usage
