@@ -1,0 +1,10 @@
+bibentry(
+  bibtype = "Manual",
+  title = "CB: R package for modeling unit data with the Contracted-Beta distribution",
+  author = personList(
+    person(given = "Yuri A.", family = "Iriarte")
+  ),
+  year = "2026",
+  note = "R package version 1.0.0",
+  url = "https://github.com/YuriIriarte/CB"
+)
