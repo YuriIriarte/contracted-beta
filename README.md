@@ -11,3 +11,11 @@ The package provides tools for:
 
 All scripts used in the associated manuscript (simulations, figures, and real-data applications) are included for reproducibility.
 
+## Installation
+
+You can install the stable version used in the paper directly from GitHub:
+
+```r
+install.packages("remotes")
+remotes::install_github("YuriIriarte/contracted-beta")
+
