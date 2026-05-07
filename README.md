@@ -1,6 +1,6 @@
 # CB: Contracted-Beta Distribution for Unit Data
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20072138.svg)](https://doi.org/10.5281/zenodo.20072138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 R package for modeling data on the unit interval $(0,1)$ using the Contracted-Beta (CB) distribution.
