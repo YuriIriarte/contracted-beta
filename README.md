@@ -45,9 +45,6 @@ fit$AIC
 
 ---
 
-## 🔷 6. Citation
-
-```markdown
 ## Citation
 
 If you use this package, please cite:
