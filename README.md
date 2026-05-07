@@ -19,3 +19,27 @@ You can install the stable version used in the paper directly from GitHub:
 install.packages("remotes")
 remotes::install_github("YuriIriarte/contracted-beta")
 ```
+
+
+---
+
+## 🔷 4. Basic usage (clave para reviewers)
+
+```markdown
+## Basic Usage
+
+```r
+library(CB)
+
+# Generate data
+x <- rCB(100, alpha = 2, beta = 3)
+
+# Fit model (MLE)
+fit <- fitCB_mle(x)
+
+# Summary
+fit$par
+fit$AIC
+```
+
+
