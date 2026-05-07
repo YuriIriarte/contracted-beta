@@ -1,3 +1,7 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20072138.svg)](https://doi.org/10.5281/zenodo.20072138)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Overview
 
 The **CB** package implements the Contracted-Beta distribution, a flexible model for bounded data on the unit interval $(0,1)$.
@@ -55,7 +59,3 @@ If you use this package, please cite:
 ```
 Iriarte, Y. A. (2026). CB: R package for modeling unit data using the Contracted-Beta distribution.
 DOI: https://doi.org/10.5281/zenodo.20072138
-
-## License
-
-MIT License
