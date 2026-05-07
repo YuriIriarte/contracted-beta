@@ -20,9 +20,6 @@ install.packages("remotes")
 remotes::install_github("YuriIriarte/contracted-beta")
 ```
 
-
----
-
 ## Basic usage
 
 ```markdown
@@ -41,9 +38,6 @@ fit <- fitCB_mle(x)
 fit$par
 fit$AIC
 ```
-
-
----
 
 ## Citation
 
