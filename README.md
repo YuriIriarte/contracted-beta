@@ -23,7 +23,7 @@ remotes::install_github("YuriIriarte/contracted-beta")
 
 ---
 
-## 🔷 4. Basic usage
+## Basic usage
 
 ```markdown
 ## Basic Usage
@@ -43,3 +43,24 @@ fit$AIC
 ```
 
 
+---
+
+## 🔷 6. Citation
+
+```markdown
+## Citation
+
+If you use this package, please cite:
+
+```r
+@Manual{,
+  title = {CB: R package for modeling unit data with the Contracted-Beta distribution},
+  author = {Yuri A. Iriarte},
+  year = {2026},
+  note = {R package version 1.0.0},
+  doi = {10.5281/zenodo.20072138},
+  url = {https://doi.org/10.5281/zenodo.20072138},
+}
+```
+Iriarte, Y. A. (2026). CB: R package for modeling unit data using the Contracted-Beta distribution.
+DOI: https://doi.org/10.5281/zenodo.20072138
