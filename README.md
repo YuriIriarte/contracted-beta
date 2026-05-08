@@ -49,8 +49,9 @@ fit$AIC
 ## Reproducibility Resources
 
 All scripts used in the simulation studies, figures, and real-data
-applications reported in the paper are distributed within the
-package.
+applications reported in the paper *Flexible Modeling for Unit Data
+via Random Contraction Mechanisms: Inference, Simulation, and
+Applications* are distributed within the package.
 
 After installing and loading the package, the available scripts can
 be listed using:
