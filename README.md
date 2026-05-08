@@ -1,4 +1,4 @@
-# CB: Contracted-Beta Distribution for Unit Data
+# CB: An R package for modeling unit data using the Contracted-Beta distribution (v1.0.1)
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20072138.svg)](https://doi.org/10.5281/zenodo.20072138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
