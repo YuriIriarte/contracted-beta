@@ -46,6 +46,38 @@ fit$par
 fit$AIC
 ```
 
+## Reproducibility Resources
+
+All scripts used in the simulation studies, figures, and real-data
+applications reported in the paper are distributed within the
+package.
+
+After installing and loading the package, the available scripts can
+be listed using:
+
+```r
+list.files(system.file("paper", package = "CB"))
+```
+
+For example, the Monte Carlo simulation script can be accessed
+directly through:
+
+```r
+file.edit(system.file("paper/simulations.R", package = "CB"))
+```
+
+Additional scripts for figures and applications can be accessed in
+the same way.
+
+Documentation for all implemented functions is available through the
+standard R help system. For example:
+
+```r
+?dCB
+?fitCB_mle
+?gofCB_boot
+```
+
 ## Citation
 
 If you use this package, please cite:
