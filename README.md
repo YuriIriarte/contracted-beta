@@ -93,5 +93,4 @@ If you use this package, please cite:
   url = {https://doi.org/10.5281/zenodo.20085863},
 }
 ```
-Iriarte, Y. A. (2026). CB: R package for modeling unit data using the Contracted-Beta distribution (v1.0.1).
-DOI: https://doi.org/10.5281/zenodo.20085863
+Iriarte, Y. A. (2026). CB: R package for modeling unit data using the Contracted-Beta distribution, R package version 1.0.1. DOI: https://doi.org/10.5281/zenodo.20085863
