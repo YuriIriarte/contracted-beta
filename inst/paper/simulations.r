@@ -1,10 +1,10 @@
 # ============================================================
-# Monte Carlo study for the canonical CB distribution
+# Monte Carlo study for the Contracted-Beta (CB) distribution
 # ============================================================
 
+library(CB)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
 library(patchwork)
 
 # ------------------------------------------------------------
@@ -15,7 +15,33 @@ mc_one_cb <- function(n, alpha_true, beta_true) {
   
   x <- rCB(n = n, alpha = alpha_true, beta = beta_true)
   
-  fit <- try(
+  # ----------------------------------------------------------
+  # Moment estimator
+  # ----------------------------------------------------------
+  
+  fit_mom <- try(fitCB_mom(x), silent = TRUE)
+  
+  if (!inherits(fit_mom, "try-error") &&
+      isTRUE(fit_mom$success) &&
+      !is.null(fit_mom$par) &&
+      all(is.finite(fit_mom$par))) {
+    
+    alpha_mom <- unname(fit_mom$par["alpha"])
+    beta_mom  <- unname(fit_mom$par["beta"])
+    success_mom <- TRUE
+    
+  } else {
+    
+    alpha_mom <- NA_real_
+    beta_mom  <- NA_real_
+    success_mom <- FALSE
+  }
+  
+  # ----------------------------------------------------------
+  # Maximum likelihood estimator
+  # ----------------------------------------------------------
+  
+  fit_mle <- try(
     fitCB_mle(
       x,
       methods = "L-BFGS-B",
@@ -24,43 +50,46 @@ mc_one_cb <- function(n, alpha_true, beta_true) {
     silent = TRUE
   )
   
-  if (inherits(fit, "try-error") ||
-      is.null(fit$par) ||
-      any(!is.finite(fit$par)) ||
-      fit$convergence != 0) {
+  if (inherits(fit_mle, "try-error") ||
+      is.null(fit_mle$par) ||
+      any(!is.finite(fit_mle$par)) ||
+      fit_mle$convergence != 0) {
     
     return(data.frame(
       alpha_true = alpha_true,
       beta_true = beta_true,
       n = n,
-      alpha_hat = NA_real_,
-      beta_hat = NA_real_,
+      alpha_mle = NA_real_,
+      beta_mle = NA_real_,
+      alpha_mom = alpha_mom,
+      beta_mom = beta_mom,
       se_alpha = NA_real_,
       se_beta = NA_real_,
       cp_alpha = NA_real_,
       cp_beta = NA_real_,
-      success = FALSE
+      success_mle = FALSE,
+      success_mom = success_mom
     ))
   }
   
-  alpha_hat <- unname(fit$par["alpha"])
-  beta_hat  <- unname(fit$par["beta"])
+  alpha_mle <- unname(fit_mle$par["alpha"])
+  beta_mle  <- unname(fit_mle$par["beta"])
   
-  se_alpha <- unname(fit$se["alpha"])
-  se_beta  <- unname(fit$se["beta"])
+  se_alpha <- unname(fit_mle$se["alpha"])
+  se_beta  <- unname(fit_mle$se["beta"])
   
   cp_alpha <- NA_real_
   cp_beta  <- NA_real_
   
   if (is.finite(se_alpha) && se_alpha > 0) {
-    li_alpha <- alpha_hat - 1.96 * se_alpha
-    ls_alpha <- alpha_hat + 1.96 * se_alpha
+    li_alpha <- alpha_mle - 1.96 * se_alpha
+    ls_alpha <- alpha_mle + 1.96 * se_alpha
     cp_alpha <- as.numeric(alpha_true >= li_alpha && alpha_true <= ls_alpha)
   }
   
   if (is.finite(se_beta) && se_beta > 0) {
-    li_beta <- beta_hat - 1.96 * se_beta
-    ls_beta <- beta_hat + 1.96 * se_beta
+    li_beta <- beta_mle - 1.96 * se_beta
+    ls_beta <- beta_mle + 1.96 * se_beta
     cp_beta <- as.numeric(beta_true >= li_beta && beta_true <= ls_beta)
   }
   
@@ -68,13 +97,16 @@ mc_one_cb <- function(n, alpha_true, beta_true) {
     alpha_true = alpha_true,
     beta_true = beta_true,
     n = n,
-    alpha_hat = alpha_hat,
-    beta_hat = beta_hat,
+    alpha_mle = alpha_mle,
+    beta_mle = beta_mle,
+    alpha_mom = alpha_mom,
+    beta_mom = beta_mom,
     se_alpha = se_alpha,
     se_beta = se_beta,
     cp_alpha = cp_alpha,
     cp_beta = cp_beta,
-    success = TRUE
+    success_mle = TRUE,
+    success_mom = success_mom
   )
 }
 
@@ -84,8 +116,8 @@ mc_one_cb <- function(n, alpha_true, beta_true) {
 
 mc_CB_study <- function(R = 1000,
                         n_values = c(50, 100, 200, 300, 500),
-                        alpha_values = c(1, 4, 8),
-                        beta_values = c(1, 4, 8),
+                        alpha_values = c(0.5, 2, 4),
+                        beta_values = c(1, 3, 6),
                         seed = 123,
                         verbose = TRUE) {
   
@@ -106,7 +138,7 @@ mc_CB_study <- function(R = 1000,
     beta_true  <- scenarios$beta_true[i]
     n          <- scenarios$n[i]
     
-    if (verbose) {
+    if (isTRUE(verbose)) {
       message(
         "Scenario ", i, "/", nrow(scenarios),
         ": alpha = ", alpha_true,
@@ -135,18 +167,22 @@ mc_CB_study <- function(R = 1000,
       alpha_true,
       beta_true,
       n,
-      alpha_hat,
-      beta_hat,
+      alpha_mle,
+      beta_mle,
+      alpha_mom,
+      beta_mom,
       se_alpha,
       se_beta,
       cp_alpha,
       cp_beta,
-      success
+      success_mle,
+      success_mom
     )
 }
 
 # ------------------------------------------------------------
-# Summary table: mean, bias, RMSE, coverage probability
+# Summary table:
+# Bias and RMSE for MLE and MoM; CP only for MLE
 # ------------------------------------------------------------
 
 summarize_CB_mc <- function(mc_results) {
@@ -154,78 +190,62 @@ summarize_CB_mc <- function(mc_results) {
   mc_results %>%
     group_by(alpha_true, beta_true, n) %>%
     summarise(
-      mean_alpha = mean(alpha_hat, na.rm = TRUE),
-      mean_beta  = mean(beta_hat, na.rm = TRUE),
+      Bias_alpha_MLE = mean(alpha_mle - alpha_true, na.rm = TRUE),
+      Bias_beta_MLE  = mean(beta_mle  - beta_true,  na.rm = TRUE),
+      RMSE_alpha_MLE = sqrt(mean((alpha_mle - alpha_true)^2, na.rm = TRUE)),
+      RMSE_beta_MLE  = sqrt(mean((beta_mle  - beta_true)^2,  na.rm = TRUE)),
       
-      Bias_alpha = mean(alpha_hat - alpha_true, na.rm = TRUE),
-      Bias_beta  = mean(beta_hat - beta_true, na.rm = TRUE),
+      Bias_alpha_MoM = mean(alpha_mom - alpha_true, na.rm = TRUE),
+      Bias_beta_MoM  = mean(beta_mom  - beta_true,  na.rm = TRUE),
+      RMSE_alpha_MoM = sqrt(mean((alpha_mom - alpha_true)^2, na.rm = TRUE)),
+      RMSE_beta_MoM  = sqrt(mean((beta_mom  - beta_true)^2,  na.rm = TRUE)),
       
-      RMSE_alpha = sqrt(mean((alpha_hat - alpha_true)^2, na.rm = TRUE)),
-      RMSE_beta  = sqrt(mean((beta_hat - beta_true)^2, na.rm = TRUE)),
+      CP_alpha_MLE = mean(cp_alpha, na.rm = TRUE),
+      CP_beta_MLE  = mean(cp_beta,  na.rm = TRUE),
       
-      CP_alpha = mean(cp_alpha, na.rm = TRUE),
-      CP_beta  = mean(cp_beta, na.rm = TRUE),
-      
-      SuccessRate = mean(success, na.rm = TRUE),
+      SuccessRate_MLE = mean(success_mle, na.rm = TRUE),
+      SuccessRate_MoM = mean(success_mom, na.rm = TRUE),
       .groups = "drop"
     )
 }
 
 # ------------------------------------------------------------
-# Boxplots of the parameter estimates
+# Function to assemble 1 x 3 panels
 # ------------------------------------------------------------
 
-plot_box_cb_free_y <- function(mc_results, alpha_val, beta_val) {
+build_simulation_panel <- function(mc_results,
+                                   alpha_val,
+                                   beta_vals,
+                                   scenario_labels) {
   
-  df <- mc_results %>%
-    filter(success == TRUE,
-           alpha_true == alpha_val,
-           beta_true == beta_val) %>%
-    select(alpha_true, beta_true, n, alpha_hat, beta_hat) %>%
-    pivot_longer(
-      cols = c(alpha_hat, beta_hat),
-      names_to = "Parameter",
-      values_to = "Estimate"
-    ) %>%
-    mutate(
-      Parameter = recode(
-        Parameter,
-        alpha_hat = "hat(alpha)",
-        beta_hat  = "hat(beta)"
-      ),
-      Panel = paste0(Parameter),
-      n = factor(n)
-    )
+  plots <- vector("list", length(beta_vals))
   
-  ggplot(df, aes(x = n, y = Estimate)) +
-    geom_boxplot(
-      width = 0.60,
-      fill = "white",
-      color = "black",
-      outlier.size = 1.1,
-      outlier.alpha = 0.55
+  for (i in seq_along(beta_vals)) {
+    
+    beta_val <- beta_vals[i]
+    scen_lab <- scenario_labels[i]
+    
+    plots[[i]] <- plot_box_cb_free_y(
+      mc_results = mc_results,
+      alpha_val = alpha_val,
+      beta_val = beta_val
     ) +
-    facet_wrap(
-      ~ Panel,
-      scales = "free_y",
-      nrow = 1,
-      labeller = label_parsed
-    ) +
-    labs(
-      x = "Sample size (n)",
-      y = "Estimated values"
-    ) +
-    theme_bw() +
+      ggtitle(
+        bquote(
+          .(scen_lab) * ": " ~
+            alpha == .(alpha_val) * "," ~
+            beta == .(beta_val)
+        )
+      )
+  }
+  
+  wrap_plots(plots, nrow = 1) &
     theme(
-      strip.background = element_rect(fill = "grey85", color = NA),
-      strip.text = element_text(face = "bold", size = 14),
-      axis.title.x = element_text(size = 14, face = "bold"),
-      axis.title.y = element_text(size = 14, face = "bold"),
-      axis.text.x = element_text(size = 12),
-      axis.text.y = element_text(size = 12),
-      panel.grid.major = element_line(color = "grey82"),
-      panel.grid.minor = element_blank(),
-      panel.spacing = unit(1.2, "lines")
+      plot.title = element_text(
+        hjust = 0.5,
+        face = "bold",
+        size = 12
+      )
     )
 }
 
@@ -236,9 +256,10 @@ plot_box_cb_free_y <- function(mc_results, alpha_val, beta_val) {
 mc_res <- mc_CB_study(
   R = 1000,
   n_values = c(50, 100, 200, 300, 500),
-  alpha_values = c(0.5, 2, 4), 
+  alpha_values = c(0.5, 2, 4),
   beta_values = c(1, 3, 6),
-  seed = 123
+  seed = 123,
+  verbose = TRUE
 )
 
 # ------------------------------------------------------------
@@ -247,84 +268,22 @@ mc_res <- mc_CB_study(
 
 mc_summary_full <- summarize_CB_mc(mc_res)
 
-mc_summary_full %>%
+mc_summary_alpha05 <- mc_summary_full %>%
   filter(alpha_true == 0.5) %>%
   mutate(across(where(is.numeric), ~ round(.x, 5)))
 
-mc_summary_full %>%
+mc_summary_alpha2 <- mc_summary_full %>%
   filter(alpha_true == 2) %>%
   mutate(across(where(is.numeric), ~ round(.x, 5)))
 
-mc_summary_full %>%
+mc_summary_alpha4 <- mc_summary_full %>%
   filter(alpha_true == 4) %>%
   mutate(across(where(is.numeric), ~ round(.x, 5)))
 
-# ------------------------------------------------------------
-# Boxplots
-# ------------------------------------------------------------
+as.data.frame(mc_summary_alpha05)
 
-p1 <- plot_box_cb_free_y(mc_res, alpha_val = 0.5, beta_val = 1) +
-  ggtitle(expression(paste("Scenario A: ", alpha == 0.5, ", ", beta == 1)))
+as.data.frame(mc_summary_alpha2)
 
-p2 <- plot_box_cb_free_y(mc_res, alpha_val = 0.5, beta_val = 3) +
-  ggtitle(expression(paste("Scenario B: ", alpha == 0.5, ", ", beta == 3)))
-
-p3 <- plot_box_cb_free_y(mc_res, alpha_val = 0.5, beta_val = 6) +
-  ggtitle(expression(paste("Scenario C: ", alpha == 0.5, ", ", beta == 6)))
-
-library(patchwork)
-
-fig <- (p1 | p2 | p3) &
-  theme(
-    plot.title = element_text(
-      hjust = 0.5,
-      face = "bold",
-      size = 12
-    )
-  )
-
-fig
-
-p4 <- plot_box_cb_free_y(mc_res, alpha_val = 2, beta_val = 1) +
-  ggtitle(expression(paste("Scenario D: ", alpha == 2, ", ", beta == 1)))
-
-p5 <- plot_box_cb_free_y(mc_res, alpha_val = 2, beta_val = 3) +
-  ggtitle(expression(paste("Scenario E: ", alpha == 2, ", ", beta == 3)))
-
-p6 <- plot_box_cb_free_y(mc_res, alpha_val = 2, beta_val = 6) +
-  ggtitle(expression(paste("Scenario F: ", alpha == 2, ", ", beta == 6)))
-
-fig <- (p4 | p5 | p6) &
-  theme(
-    plot.title = element_text(
-      hjust = 0.5,
-      face = "bold",
-      size = 12
-    )
-  )
-
-fig
-
-p7 <- plot_box_cb_free_y(mc_res, alpha_val = 4, beta_val = 1) +
-  ggtitle(expression(paste("Scenario G: ", alpha == 4, ", ", beta == 1)))
-
-p8 <- plot_box_cb_free_y(mc_res, alpha_val = 4, beta_val = 3) +
-  ggtitle(expression(paste("Scenario H: ", alpha == 4, ", ", beta == 3)))
-
-p9 <- plot_box_cb_free_y(mc_res, alpha_val = 4, beta_val = 6) +
-  ggtitle(expression(paste("Scenario I: ", alpha == 4, ", ", beta == 6)))
-
-fig <- (p7 | p8 | p9) &
-  theme(
-    plot.title = element_text(
-      hjust = 0.5,
-      face = "bold",
-      size = 12
-    )
-  )
-
-fig
-
-
+as.data.frame(mc_summary_alpha4)
 
 
